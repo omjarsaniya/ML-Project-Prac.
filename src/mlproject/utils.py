@@ -105,3 +105,7 @@ def load_object(file_path):
     except Exception as e:
         logging.error(f"Error loading object: {e}")
         raise CustomException(e, sys)
+    
+
+
+    

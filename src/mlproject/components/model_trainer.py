@@ -1,11 +1,14 @@
 import os
 import sys
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from catboost import CatBoostRegressor
+import mlflow
+from mlflow.metrics import mae, rmse
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
@@ -23,7 +26,7 @@ class ModelTrainer:
         self.model_trainer_config = ModelTrainerConfig()
 
     def initiate_model_trainer(self, train_array, test_array):
-        try:
+        
             logging.info("Splitting training and testing input data")
             X_train, y_train, X_test, y_test = (
                 train_array[:, :-1],
@@ -112,6 +115,57 @@ class ModelTrainer:
             ## To get best model from dict
             best_model = models[best_model_name]
 
+            print("This is the best model : ", best_model_name)
+
+            model_names = list(parameters.keys())
+
+            actual_model = ""
+
+            for model in model_names:
+                if best_model_name == model :
+                    actual_model = actual_model + model
+
+            best_parameters = parameters[actual_model]
+
+            print("Before MLflow block")
+
+            mlflow.set_tracking_uri("https://dagshub.com/ombjarsaniya123/ML-Project-Prac.mlflow")
+
+            with mlflow.start_run():
+
+                print("Before MLflow block")
+
+                # Train best model
+                best_model.fit(X_train, y_train)
+
+                # Predict
+                predicted_quality = best_model.predict(X_test)
+
+                # Metrics
+                import numpy as np
+
+                rmse = np.sqrt(mean_squared_error(y_test, predicted_quality))
+                mae = mean_absolute_error(y_test, predicted_quality)
+                r2 = r2_score(y_test, predicted_quality)
+
+                print("RMSE:", rmse)
+                print("MAE:", mae)
+                print("R2:", r2)
+
+                print("Logging metrics:", rmse, mae, r2)
+
+                # Log parameters
+                for key, value in best_parameters.items():
+                    mlflow.log_param(key, value)
+
+                mlflow.log_metric("rmse", rmse)
+                mlflow.log_metric("mae", mae)
+                mlflow.log_metric("r2", r2)
+
+                mlflow.sklearn.log_model(best_model, "model")
+
+
+
             if best_model_score < 0.6:
                 raise CustomException("No best model found", sys)
 
@@ -127,7 +181,7 @@ class ModelTrainer:
             return r2_square
         
 
-        except Exception as e:
-            raise CustomException(e, sys)     
+           
+    
         
 

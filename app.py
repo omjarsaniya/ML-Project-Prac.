@@ -8,6 +8,22 @@ from src.mlproject.components.data_transformation import DataTransformationConfi
 from src.mlproject.components.model_trainer import ModelTrainer
 from src.mlproject.components.model_trainer import ModelTrainerConfig
 
+
+
+
+import dagshub # type: ignore
+dagshub.init(repo_owner="ombjarsaniya123", repo_name="ML-Project-Prac")
+
+import mlflow
+
+with mlflow.start_run():
+    mlflow.log_params({"parameters": 10})
+    
+
+
+
+
+
 if __name__ == "__main__":
     logging.info("The execution has started")
 
